@@ -2,10 +2,13 @@ from setuptools import setup, find_packages
 
 setup(
     name="sentiment_analysis_preprocessing",
-    version="0.1.0",  
-    packages=find_packages(),  # Automatically find all packages, including the current package
-    install_requires=[  # List any dependencies here
-        "nltk", "scikit-learn", "tensorflow",
+    version="0.1.0",
+    packages=find_packages(),
+    install_requires=[
+        "nltk>=3.5",
+        "scikit-learn>=1.0",
+        "joblib>=1.0",
+        "numpy>=1.19"
     ],
     include_package_data=True,
     classifiers=[
