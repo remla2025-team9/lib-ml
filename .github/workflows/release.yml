@@ -3,12 +3,12 @@ name: Release Library
 on:
   push:
     tags:
-      - 'v*'  # Trigger only when a Git tag is pushed.
+      - 'v*'  # Trigger only when a Git tag is pushed
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -21,13 +21,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install wheel setuptools
+
+      - name: Build package
+        run: |
+          python setup.py sdist bdist_wheel
 
       - name: Publish to GitHub Packages
         run: |
-          python setup.py sdist bdist_wheel
-          pip install --upgrade twine
-          twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
+          python -m pip install --upgrade twine
+          twine upload --repository-url https://upload.pypi.org/legacy/ dist/
         env:
-          TWINE_USERNAME: ${{secrets.TWINE_USERNAME}}
-          TWINE_PASSWORD: ${{secrets.TWINE_PASSWORD}}
+          TWINE_USERNAME: ${{ github.actor }}
+          TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
