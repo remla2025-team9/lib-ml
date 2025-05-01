@@ -11,28 +11,36 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.8'
 
       - name: Install build tools
         run: |
           python -m pip install --upgrade pip
-          pip install wheel setuptools twine
+          pip install wheel setuptools
 
-      - name: Build distribution packages
+      - name: Build distributions
         run: |
           python setup.py sdist bdist_wheel
-        # 确保打包输出在 dist/ 目录下出现 .tar.gz 和 .whl 文件
 
-      - name: Publish to GitHub Python Packages
-        run: |
-          twine upload --repository-url \
-            https://api.github.com/orgs/${{ github.repository_owner }}/packages/pypi/upload \
-            dist/*
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*.tar.gz,dist/*.whl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
