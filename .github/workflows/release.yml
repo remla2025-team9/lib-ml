@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'  # Trigger only when a Git tag is pushed.
 
+permissions:
+  contents: write  # allow creating/updating releases and uploading assets
+  id-token: write  # if using OIDC tokens elsewhere
+
 jobs:
   release:
     runs-on: ubuntu-latest
