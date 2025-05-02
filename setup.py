@@ -1,7 +1,13 @@
 from setuptools import setup, find_packages
+from pathlib import Path
+
+about = {}
+with open(Path(__file__).parent / 'version.py') as f:
+    exec(f.read(), about)
 
 setup(
     name="sentiment_analysis_preprocessing",
+    version=about['__version__'],
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
