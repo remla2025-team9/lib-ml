@@ -67,10 +67,10 @@ jobs:
           # Update the version.py file with the new pre-release version
           echo "__version__ = '$NEW_VERSION'" > version.py
 
-      - name: Commit version bump
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git add version.py
-          git commit -m "Bump version to $NEW_VERSION"
-          git push origin main
+      # - name: Commit version bump
+      #   run: |
+      #     git config --global user.name "GitHub Actions"
+      #     git config --global user.email "actions@github.com"
+      #     git add version.py
+      #     git commit -m "Bump version to $NEW_VERSION"
+      #     git push origin main
