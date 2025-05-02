@@ -5,7 +5,6 @@ from version import __version__
 setup(
     name="sentiment_analysis_preprocessing",
     version=__version__,
-    version="0.1.0",
     packages=find_packages(),
     install_requires=[
         "nltk>=3.5",
