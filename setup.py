@@ -1,9 +1,6 @@
 from setuptools import setup, find_packages
 from version import __version__
 
-about = {}
-with open(Path(__file__).parent / 'version.py') as f:
-    exec(f.read(), about)
 
 setup(
     name="sentiment_analysis_preprocessing",
