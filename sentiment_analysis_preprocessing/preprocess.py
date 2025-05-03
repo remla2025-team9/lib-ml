@@ -18,7 +18,7 @@ class TextCleaner(BaseEstimator, TransformerMixin):
     def __init__(self):
         self.ps = PorterStemmer()
         self.stopwords = set(stopwords.words('english'))
-        self.stopwords.discard('not')  # keep "not" for sentiment
+        self.stopwords.discard('not')  
 
     def _clean_text(self, text):
         text = re.sub('[^a-zA-Z]', ' ', text).lower()
