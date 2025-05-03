@@ -1,0 +1,19 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.so
+
+# Output artifacts
+output/
+*.joblib
+
+# Virtual environment
+venv/
+env/
+
+# Jupyter notebook checkpoints (if ever used)
+.ipynb_checkpoints/
+
+# System files
+.DS_Store
+Thumbs.db
