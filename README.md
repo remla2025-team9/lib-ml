@@ -9,7 +9,10 @@ This Python library provides tools for text preprocessing, specifically designed
 
 ## Installation
 
-You can install the library using pip directly from the repository:
+Install the package via pip:
 
 ```bash
-pip install git+https://github.com/remla2025-team9/sentiment-analysis-preprocessing.git
+pip install git+https://github.com/remla2025-team9/lib-ml.git
+```
+
+
