@@ -1,10 +1,7 @@
 from setuptools import setup, find_packages
-from version import __version__
-
 
 setup(
     name="sentiment_analysis_preprocessing",
-    version=__version__,
     packages=find_packages(),
     install_requires=[
         "nltk>=3.5",

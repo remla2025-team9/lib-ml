@@ -1,76 +1,64 @@
-name: Release Library
+name: Auto Version & Release
 
 on:
   push:
-    tags:
-      - 'v*'  # Trigger only when a Git tag is pushed.
+    branches: [main]
 
 permissions:
-  contents: write  # allow creating/updating releases and uploading assets
-  id-token: write  # if using OIDC tokens elsewhere
+  contents: write
+  id-token: write
 
 jobs:
-  release:
+  version-and-release:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
 
+      - name: Get latest tag and bump patch version
+        id: tag
+        run: |
+          git fetch --tags
+          LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+          echo "Latest tag: $LATEST_TAG"
+
+          IFS='.' read -r MAJOR MINOR PATCH <<< "${LATEST_TAG#v}"
+          PATCH=$((PATCH+1))
+          NEW_TAG="v$MAJOR.$MINOR.$PATCH"
+          echo "New tag: $NEW_TAG"
+
+          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
+
+      - name: Create Git tag
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
+
       - name: Install build tools
         run: |
           python -m pip install --upgrade pip
-          pip install wheel setuptools
+          pip install setuptools wheel
 
-      - name: Build distributions
+      - name: Build package
         run: |
           python setup.py sdist bdist_wheel
 
-      - name: Fetch current version from version.py
-        id: fetch_version
-        run: |
-          VERSION=$(python -c "from version import __version__; print(__version__)")
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
       - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/*.tar.gz,dist/*.whl
+          tag_name: ${{ env.NEW_TAG }}
+          name: Release ${{ env.NEW_TAG }}
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Bump version for next release
-        run: |
-          # Bump version to the next pre-release version (e.g., 1.2.3 -> 1.2.4-pre)
-          CURRENT_VERSION=$(python -c "from version import __version__; print(__version__)")
-          IFS='.' read -r -a version_parts <<< "$CURRENT_VERSION"
-          PATCH=${version_parts[2]}
-          NEW_PATCH=$((PATCH + 1))
-          NEW_VERSION="${version_parts[0]}.${version_parts[1]}.$NEW_PATCH-pre"
-          
-          # Update the version.py file with the new pre-release version
-          echo "__version__ = '$NEW_VERSION'" > version.py
-
-      # - name: Commit version bump
-      #   run: |
-      #     git config --global user.name "GitHub Actions"
-      #     git config --global user.email "actions@github.com"
-      #     git add version.py
-      #     git commit -m "Bump version to $NEW_VERSION"
-      #     git push origin main
