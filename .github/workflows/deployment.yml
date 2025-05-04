@@ -87,16 +87,16 @@ jobs:
         python sentiment_analysis_preprocessing/preprocess.py
 
     - name: Upload generated files as artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: sentiment-pipeline-artifacts-v${{ steps.version.outputs.value }}
+        name: sentiment-pipeline-artifacts-${{ steps.version.outputs.value }}
         path: output/
     
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ steps.resolve_version.outputs.version }}
-        files: output-v${{ steps.resolve_version.outputs.version }}/*
+        tag_name: ${{ steps.version.outputs.value }}
+        files: output-v${{ steps.version.outputs.value }}/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
