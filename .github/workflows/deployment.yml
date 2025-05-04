@@ -95,8 +95,9 @@ jobs:
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ steps.resolve_version.outputs.version }}
-        files: output-v${{ steps.resolve_version.outputs.version }}/*
+        tag_name: ${{ steps.version.outputs.value }}
+        files: output-v${{ steps.version.outputs.value }}/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
