@@ -7,7 +7,8 @@ setup(
         "nltk>=3.5",
         "scikit-learn>=1.0",
         "joblib>=1.0",
-        "numpy>=1.19"
+        "numpy>=1.19",
+        "pandas>=1.3.3"
     ],
     include_package_data=True,
     classifiers=[

@@ -2,6 +2,7 @@ import re
 import os
 import nltk
 import joblib
+import pandas as pd
 
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
@@ -64,5 +65,33 @@ def prepare(message, model_path='output/preprocessor.joblib'):
     """
     pipeline = joblib.load(model_path)
     return pipeline.transform([message])
+
+def load_data(path, text_col, sep='\t', quoting=3):
+    """
+    Load data from a CSV file and preprocess the text.
+    Args:
+    - path (str): The path to the CSV file to be loaded.
+    - text_col (str): The name of the column containing the text data to preprocess.
+    - sep (str): The delimiter used in the CSV file (default is tab-separated, i.e., '\t').
+    - quoting (int): Controls how quotes are handled in the CSV file. The default value is 3 (which means QUOTE_NONE in pandas, so quotes are ignored).
+
+    Returns:
+    - corpus (list): A list containing the text data from the specified column.
+    """
+    dataset = pd.read_csv(path, delimiter=sep, quoting=quoting)
+
+    corpus = dataset[text_col].values.tolist()
+
+    return corpus
+
+def main():
+    data_path = 'data/training_data.tsv'  
+    text_column = 'Review' 
+    messages = load_data(data_path, text_column)
+    preprocessed_data = preprocess(messages)
+    print(preprocessed_data)
+
+if __name__ == "__main__":
+    main()
 
 
