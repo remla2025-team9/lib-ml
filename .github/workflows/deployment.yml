@@ -89,7 +89,7 @@ jobs:
     - name: Upload generated files as artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: sentiment-pipeline-artifacts-v${{ steps.version.outputs.value }}
+        name: sentiment-pipeline-artifacts-${{ steps.version.outputs.value }}
         path: output/
     
     - name: Create GitHub Release
