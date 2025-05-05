@@ -4,99 +4,105 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  packages: write
+  contents: write   
+  packages: write   
 
 jobs:
-
-  build-and-deploy:
+  build-train-release:
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v4  
-      with:
-        fetch-depth: 0
+      - name: Checkout full history
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Get current version
-      id: get_version
-      uses: mathieudutour/github-tag-action@v6.2
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        pre_release_branches: main
-        default_prerelease_bump: false      
-        default_bump: false
-        append_to_pre_release_tag: pre        
-        tag_prefix: v
+      - name: Get current version tag
+        id: get_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token:        ${{ secrets.GITHUB_TOKEN }}
+          tag_prefix:          v
+          default_bump:        false
+          default_prerelease_bump: false
+          append_to_pre_release_tag: pre
+          pre_release_branches: main
 
-    - name: Resolve version
-      id: version
-      run: |
-        PREVIOUS_TAG="${{ steps.get_version.outputs.previous_tag }}"
-        RESOLVED_VALUE="" # Initialize variable
+      - name: Resolve version
+        id: resolve_version
+        run: |
+          PREV_TAG="${{ steps.get_version.outputs.previous_tag }}"
+          STABLE_VERSION=""
 
-        if [[ "${{ github.ref }}" == refs/tags/v*.*.* ]]; then
-          RESOLVED_VALUE="${GITHUB_REF#refs/tags/v}"
-          echo "Triggered by tag push. Using version: $RESOLVED_VALUE"
+          if [[ "${{ github.ref }}" == refs/tags/v*.*.* ]]; then
+            STABLE_VERSION="${GITHUB_REF#refs/tags/v}"
+            echo "Triggered by tag push. Using version: $RESOLVED_VALUE"
 
-        elif [[ -n "$PREVIOUS_TAG" ]]; then
-          RESOLVED_VALUE="${PREVIOUS_TAG%-pre.*}"
-          echo "Not triggered by tag. Stripped pre-release from '$PREVIOUS_TAG' to get base version: $RESOLVED_VALUE"
-        
-        else
-          echo "::warning::Not a tag push and no previous tag found by 'get_version' step."
-          echo "::error::Cannot resolve version."
-          exit 1 # Fail the job if version can't be resolved
-        fi
+          elif [[ -n "$PREV_TAG" ]]; then
+            STABLE_VERSION="${PREV_TAG%-pre.*}"
+            echo "Not triggered by tag. Stripped pre-release from '$PREVIOUS_TAG' to get base version: $RESOLVED_VALUE"
 
-        echo "value=$RESOLVED_VALUE" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Cannot resolve version" && exit 1
+          fi
 
-    - name: Create stable git tag
-      id: create_stable_tag
-      uses: mathieudutour/github-tag-action@v6.2
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        custom_tag: ${{ steps.version.outputs.value }}
-        default_bump: false
-        default_prerelease_bump: false
-        tag_prefix: ""
+          echo "version=$STABLE_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create stable git tag
+        id: create_stable_tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token:        ${{ secrets.GITHUB_TOKEN }}
+          custom_tag:          ${{ steps.resolve_version.outputs.version }}
+          default_bump:        false
+          default_prerelease_bump: false
+          tag_prefix:          ''
     
-    - name: Bump patch and add pre tag
-      id: bump_patch
-      if: github.ref == 'refs/heads/main'
-      uses: mathieudutour/github-tag-action@v6.2
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        pre_release_branches: main
-        default_prerelease_bump: prepatch      
-        append_to_pre_release_tag: pre        
-        tag_prefix: v
-        default_bump: patch
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+      
+      - name: Run preprocessing script
+        run: |
+          python sentiment_analysis_preprocessing/preprocess.py \
+            --version ${{ steps.resolve_version.outputs.version }}
+
+      - name: Upload all preprocessing artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprocessing-artifacts-${{ steps.resolve_version.outputs.version }}
+          path: output/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.resolve_version.outputs.version }}
+          files: output/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout main branch
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Bump next prerelease tag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          release_branches:    '_NONE_'            
+          github_token:        ${{ secrets.GITHUB_TOKEN }}
+          tag_prefix:          v
+          default_bump:        patch
+          default_prerelease_bump: prepatch
+          append_to_pre_release_tag: pre
+          pre_release_branches: main
+      - run: echo "Created tag → ${{ steps.bump_pre.outputs.new_tag }}"
     
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install .
-
-    - name: Run preprocessing script
-      run: |
-        python sentiment_analysis_preprocessing/preprocess.py
-
-    - name: Upload generated files as artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: sentiment-pipeline-artifacts-${{ steps.version.outputs.value }}
-        path: output/
-    
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ steps.version.outputs.value }}
-        files: output/*
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
