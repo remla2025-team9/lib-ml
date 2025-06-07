@@ -6,8 +6,8 @@ on:
       bump_level:
         description: 'Release level for the stable version (patch, minor, major)'
         required: false
-        type: choice 
-        options:   
+        type: choice
+        options:
           - patch
           - minor
           - major
@@ -49,20 +49,29 @@ jobs:
       run: |
         python sentiment_analysis_preprocessing/preprocess.py
 
+    - name: Rename output files with version
+      run: |
+        mv output/preprocessor.joblib output/preprocessor-v${{ steps.tag_version.outputs.new_tag }}.joblib
+        mv output/preprocessed_data.joblib output/preprocessed_data-v${{ steps.tag_version.outputs.new_tag }}.joblib
+
     - name: Upload generated files as artifacts
       uses: actions/upload-artifact@v4
       with:
         name: sentiment-pipeline-artifacts-${{ steps.tag_version.outputs.new_tag }}
-        path: output/
+        path: |
+          output/preprocessor-v${{ steps.tag_version.outputs.new_tag }}.joblib
+          output/preprocessed_data-v${{ steps.tag_version.outputs.new_tag }}.joblib
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ steps.tag_version.outputs.new_tag }}
-        files: output-v${{ steps.tag_version.outputs.new_tag }}/*
+        files: |
+          output/preprocessor-v${{ steps.tag_version.outputs.new_tag }}.joblib
+          output/preprocessed_data-v${{ steps.tag_version.outputs.new_tag }}.joblib
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    
+
     - name: Bump patch and add pre tag
       id: bump_patch
       if: github.ref == 'refs/heads/main'
@@ -71,9 +80,7 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         release_branches: '_NONE_'
         pre_release_branches: main
-        default_prerelease_bump: prerelease      
-        append_to_pre_release_tag: pre        
+        default_prerelease_bump: prerelease
+        append_to_pre_release_tag: pre
         tag_prefix: v
         default_bump: patch
-
-
