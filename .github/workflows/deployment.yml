@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       bump_level:
-        description: 'Release level for the stable version (patch, minor, major)'
+        description: 'Release level (patch, minor, major)'
         required: false
         type: choice
         options:
@@ -22,7 +22,8 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -49,38 +50,22 @@ jobs:
       run: |
         python sentiment_analysis_preprocessing/preprocess.py
 
-    - name: Rename output files with version
+    - name: Copy and rename output files with version
       run: |
-        mv output/preprocessor.joblib output/preprocessor-${{ steps.tag_version.outputs.new_tag }}.joblib
-        mv output/preprocessed_data.joblib output/preprocessed_data-${{ steps.tag_version.outputs.new_tag }}.joblib
+        mkdir versioned_output
+        cp output/preprocessor.joblib versioned_output/preprocessor-${{ steps.tag_version.outputs.new_tag }}.joblib
+        cp output/preprocessed_data.joblib versioned_output/preprocessed_data-${{ steps.tag_version.outputs.new_tag }}.joblib
 
-    - name: Upload generated files as artifacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: sentiment-pipeline-artifacts-${{ steps.tag_version.outputs.new_tag }}
-        path: |
-          output/preprocessor-v${{ steps.tag_version.outputs.new_tag }}.joblib
-          output/preprocessed_data-v${{ steps.tag_version.outputs.new_tag }}.joblib
+        path: versioned_output/
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ steps.tag_version.outputs.new_tag }}
-        files: |
-          output/preprocessor-v${{ steps.tag_version.outputs.new_tag }}.joblib
-          output/preprocessed_data-v${{ steps.tag_version.outputs.new_tag }}.joblib
+        files: versioned_output/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Bump patch and add pre tag
-      id: bump_patch
-      if: github.ref == 'refs/heads/main'
-      uses: mathieudutour/github-tag-action@v6.2
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        release_branches: '_NONE_'
-        pre_release_branches: main
-        default_prerelease_bump: prerelease
-        append_to_pre_release_tag: pre
-        tag_prefix: v
-        default_bump: patch
