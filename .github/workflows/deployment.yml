@@ -2,6 +2,16 @@ name: Deployment
 
 on:
   workflow_dispatch:
+    inputs:
+      bump_level:
+        description: 'Release level for the stable version (patch, minor, major)'
+        required: false
+        type: choice 
+        options:   
+        - patch
+        - minor
+        - major
+        default: patch
 
 permissions:
   contents: write
