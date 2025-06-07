@@ -1,4 +1,3 @@
-import argparse
 import re
 import os
 import nltk
@@ -54,8 +53,8 @@ def preprocess(data, save=True, model_path='preprocessor.joblib', data_path='pre
 
     if save:
         os.makedirs('output', exist_ok=True)
-        joblib.dump(pipeline, model_path)
-        joblib.dump(transformed, data_path)
+        joblib.dump(pipeline, f'output/{model_path}')
+        joblib.dump(transformed, f'output/{data_path}')
         print(f"Preprocessor and transformed data saved to 'output/'.")
 
     return transformed
@@ -86,41 +85,11 @@ def load_data(path, text_col, sep='\t', quoting=3):
     return corpus
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--version", type=str, default='latest',
-                        help="Model version to embed in the output filename")
-    
-    args = parser.parse_args()
-
-    if not args.version:
-        raise ValueError("You must provide the version with --version <version>")
-    
     data_path = 'data/training_data.tsv'  
     text_column = 'Review' 
     messages = load_data(data_path, text_column)
-
-    model_base = 'output/preprocessor'
-    data_base = 'output/preprocessed_data'
-    model_ext = '.joblib'
-    data_ext = '.joblib'
-
-    if args.version == 'latest' or args.version[0] == 'v':
-        model_path = f"{model_base}-{args.version}{model_ext}"
-        data_path_out = f"{data_base}-{args.version}{data_ext}"
-    else:
-        model_path = f"{model_base}-v{args.version}{model_ext}"
-        data_path_out = f"{data_base}-v{args.version}{data_ext}"
-
-    preprocessed_data = preprocess(
-        data=messages,
-        save=True,
-        model_path=model_path,
-        data_path=data_path_out
-    )
-
+    preprocessed_data = preprocess(messages)
     print(preprocessed_data)
 
 if __name__ == "__main__":
     main()
-
-
