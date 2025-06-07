@@ -51,8 +51,8 @@ jobs:
 
     - name: Rename output files with version
       run: |
-        mv output/preprocessor.joblib output/preprocessor-v${{ steps.tag_version.outputs.new_tag }}.joblib
-        mv output/preprocessed_data.joblib output/preprocessed_data-v${{ steps.tag_version.outputs.new_tag }}.joblib
+        mv output/preprocessor.joblib output/preprocessor-${{ steps.tag_version.outputs.new_tag }}.joblib
+        mv output/preprocessed_data.joblib output/preprocessed_data-${{ steps.tag_version.outputs.new_tag }}.joblib
 
     - name: Upload generated files as artifacts
       uses: actions/upload-artifact@v4
