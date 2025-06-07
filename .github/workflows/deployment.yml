@@ -2,76 +2,40 @@ name: Deployment
 
 on:
   workflow_dispatch:
+    inputs:
+      bump_level:
+        description: 'Release level (patch, minor, major)'
+        required: false
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
 
 permissions:
   contents: write
   packages: write
 
 jobs:
-
   build-and-deploy:
     runs-on: ubuntu-24.04
 
     steps:
-    - uses: actions/checkout@v4  
+    - name: Checkout repository
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    - name: Get current version
-      id: get_version
+    - name: Bump version and create tag
+      id: tag_version
       uses: mathieudutour/github-tag-action@v6.2
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        pre_release_branches: main
-        default_prerelease_bump: false      
-        default_bump: false
-        append_to_pre_release_tag: pre        
+        release_branches: main
+        default_bump: ${{ github.event.inputs.bump_level }}
         tag_prefix: v
 
-    - name: Resolve version
-      id: version
-      run: |
-        PREVIOUS_TAG="${{ steps.get_version.outputs.previous_tag }}"
-        RESOLVED_VALUE="" # Initialize variable
-
-        if [[ "${{ github.ref }}" == refs/tags/v*.*.* ]]; then
-          RESOLVED_VALUE="${GITHUB_REF#refs/tags/v}"
-          echo "Triggered by tag push. Using version: $RESOLVED_VALUE"
-
-        elif [[ -n "$PREVIOUS_TAG" ]]; then
-          RESOLVED_VALUE="${PREVIOUS_TAG%-pre.*}"
-          echo "Not triggered by tag. Stripped pre-release from '$PREVIOUS_TAG' to get base version: $RESOLVED_VALUE"
-        
-        else
-          echo "::warning::Not a tag push and no previous tag found by 'get_version' step."
-          echo "::error::Cannot resolve version."
-          exit 1 # Fail the job if version can't be resolved
-        fi
-
-        echo "value=$RESOLVED_VALUE" >> "$GITHUB_OUTPUT"
-
-    - name: Create stable git tag
-      id: create_stable_tag
-      uses: mathieudutour/github-tag-action@v6.2
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        custom_tag: ${{ steps.version.outputs.value }}
-        default_bump: false
-        default_prerelease_bump: false
-        tag_prefix: ""
-    
-    - name: Bump patch and add pre tag
-      id: bump_patch
-      if: github.ref == 'refs/heads/main'
-      uses: mathieudutour/github-tag-action@v6.2
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        pre_release_branches: main
-        default_prerelease_bump: prepatch      
-        append_to_pre_release_tag: pre        
-        tag_prefix: v
-        default_bump: patch
-    
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -86,17 +50,35 @@ jobs:
       run: |
         python sentiment_analysis_preprocessing/preprocess.py
 
-    - name: Upload generated files as artifacts
+    - name: Copy and rename output files with version
+      run: |
+        mkdir versioned_output
+        cp output/preprocessor.joblib versioned_output/preprocessor-${{ steps.tag_version.outputs.new_tag }}.joblib
+        cp output/preprocessed_data.joblib versioned_output/preprocessed_data-${{ steps.tag_version.outputs.new_tag }}.joblib
+
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: sentiment-pipeline-artifacts-${{ steps.version.outputs.value }}
-        path: output/
-    
+        name: sentiment-pipeline-artifacts-${{ steps.tag_version.outputs.new_tag }}
+        path: versioned_output/
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ steps.version.outputs.value }}
-        files: output-v${{ steps.version.outputs.value }}/*
+        tag_name: ${{ steps.tag_version.outputs.new_tag }}
+        files: versioned_output/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+    
+    - name: Bump patch and add pre tag
+      id: bump_patch
+      if: github.ref == 'refs/heads/main'
+      uses: mathieudutour/github-tag-action@v6.2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        release_branches: '_NONE_'
+        pre_release_branches: main
+        default_prerelease_bump: prerelease      
+        append_to_pre_release_tag: pre        
+        tag_prefix: v
+        default_bump: patch
