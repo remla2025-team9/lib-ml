@@ -64,16 +64,16 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Bump patch and add pre tag
-        id: bump_patch
-        if: github.ref == 'refs/heads/main'
-        uses: mathieudutour/github-tag-action@v6.2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          release_branches: '_NONE_'
-          pre_release_branches: main
-          default_prerelease_bump: prerelease      
-          append_to_pre_release_tag: pre        
-          tag_prefix: v
-          default_bump: patch
+      id: bump_patch
+      if: github.ref == 'refs/heads/main'
+      uses: mathieudutour/github-tag-action@v6.2
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        release_branches: '_NONE_'
+        pre_release_branches: main
+        default_prerelease_bump: prerelease      
+        append_to_pre_release_tag: pre        
+        tag_prefix: v
+        default_bump: patch
 
 
