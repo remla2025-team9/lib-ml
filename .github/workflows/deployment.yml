@@ -101,6 +101,17 @@ jobs:
       with:
         tag_name: ${{ steps.tag_version.outputs.new_tag }}
         files: versioned_output/*
+        body: |
+          ## Installation
+                  
+          ### From Git Tag
+          ```bash
+          pip install git+https://github.com/${{ github.repository }}.git@${{ steps.tag_version.outputs.new_tag }}
+          ```
+          
+          ## Contents
+          - Source code (.tar.gz and .zip)
+          - Pre-trained preprocessor models
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
