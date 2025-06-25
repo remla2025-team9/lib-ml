@@ -28,11 +28,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install .
 
-      # Install additional dependencies for testing
-      - name: Download NLTK stopwords
-        run: |
-          python -c "import nltk; nltk.download('stopwords')"
-
       # Show all installed packages
       - name: Show installed packages
         run: pip list
@@ -41,4 +36,4 @@ jobs:
       - name: Run smoke test
         run: |
           echo "Testing sample input"
-          python -c "from sentiment_analysis_preprocessing.preprocess import preprocess; preprocess(['I am not happy with the service.'])"
+          python test_preprocessing.py
