@@ -36,4 +36,4 @@ jobs:
       - name: Run smoke test
         run: |
           echo "Testing sample input"
-          python test_preprocessing.py
+          python test_preprocessor.py
