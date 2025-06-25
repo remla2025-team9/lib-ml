@@ -10,6 +10,7 @@ output/
 # Virtual environment
 venv/
 env/
+.venv/
 
 # Jupyter notebook checkpoints (if ever used)
 .ipynb_checkpoints/

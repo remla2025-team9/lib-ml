@@ -1,18 +1,58 @@
-# Sentiment Analysis Preprocessing
+# Lib-ml
 
-This Python library provides tools for text preprocessing, specifically designed for sentiment analysis tasks. It cleans and transforms text data into a format suitable for machine learning models by removing stop words, stemming, and vectorizing the text.
+A Python library for text preprocessing and feature engineering, designed for sentiment analysis tasks.
 
-## Features
-- **Text Cleaning**: Removes non-alphabetic characters, converts text to lowercase, removes stop words, and applies stemming.
-- **TF-IDF Transformation**: Converts text data into numerical representations using the TF-IDF method.
-- **Message Length Extraction**: Adds message length as an additional feature to the text data.
+## Development Setup
 
-## Installation
+1. Clone the repository
+   ```bash
+   git clone https://github.com/remla2025-team9/lib-ml.git
+   cd lib-ml
+   ```
 
-Install the package via pip:
+2. Create and activate virtual environment
+   ```bash
+   python -m venv .venv
+   .venv\Scripts\activate  # Windows
+   source .venv/bin/activate  # macOS/Linux
+   ```
 
+3. Install dependencies
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Using the Preprocessor Class
+
+Install the library in your project:
 ```bash
-pip install git+https://github.com/remla2025-team9/lib-ml.git
+# Install specific version (e.g. v1.0.0)
+pip install git+https://github.com/remla2025-team9/lib-ml.git@v1.0.0
 ```
 
+Import and use the Preprocessor:
+```python
+from sentiment_analysis_preprocessing.preprocesser import Preprocessor
+
+# Create preprocessor instance
+preprocessor = Preprocessor()
+
+# Preprocess training data
+training_data = ["This is great!", "This is terrible."]
+processed_texts = preprocessor.transform(training_data)
+
+# Preprocess new data
+new_texts = ["Amazing product!"]
+new_processed = preprocessor.transform(new_texts)
+```
+
+The Preprocessor performs:
+1. Removes non-alphabetic characters
+2. Converts to lowercase
+3. Tokenizes by whitespace
+4. Removes English stopwords (keeps 'not')
+5. Applies Porter Stemming
+6. Joins tokens back into string
+
+Note that the Preprocessor is stateless, meaning it does not learn any parameters from the data. Therefore, calling `fit()` or `fit_transform()` is optional and will simply return the preprocessor instance itself or the transformed data,
 

@@ -1,5 +1,7 @@
+# Workflow to build and deploy library
 name: Deployment
 
+# Trigger this workflow manually with an optional input for the release level
 on:
   workflow_dispatch:
     inputs:
@@ -17,16 +19,42 @@ permissions:
   contents: write
   packages: write
 
+# Environment variables for Git configuration
+env:
+  GIT_USER_NAME: "github-actions[bot]"
+  GIT_USER_EMAIL: "github-actions[bot]@users.noreply.github.com"
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-24.04
 
     steps:
+    # Checkout the repository
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+    
+    # Sets up Git identity for automated commits
+    - name: Configure Git
+      run: |
+        git config user.name "${{ env.GIT_USER_NAME }}"
+        git config user.email "${{ env.GIT_USER_EMAIL }}"
+        git remote set-url origin git@github.com:${{ github.repository }}.git
 
+    # Sets up SSH for pushing changes to the repository to bypass branch protection rules
+    - name: Setup SSH for pushing
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.DEPLOY_KEY_PRIVATE }}
+
+    # Creates an empty commit to mark the stable release
+    - name: Create stable release commit
+      run: |
+        git commit --allow-empty -m "Stable release commit triggered by GitHub deployment action [skip ci]"
+        git push
+
+    # Bump version and create a new tag based on the specified release level
     - name: Bump version and create tag
       id: tag_version
       uses: mathieudutour/github-tag-action@v6.2
@@ -35,41 +63,32 @@ jobs:
         release_branches: main
         default_bump: ${{ github.event.inputs.bump_level }}
         tag_prefix: v
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install .
-
-    - name: Run preprocessing script
-      run: |
-        python sentiment_analysis_preprocessing/preprocess.py
-
-    - name: Copy and rename output files with version
-      run: |
-        mkdir versioned_output
-        cp output/preprocessor.joblib versioned_output/preprocessor-${{ steps.tag_version.outputs.new_tag }}.joblib
-        cp output/preprocessed_data.joblib versioned_output/preprocessed_data-${{ steps.tag_version.outputs.new_tag }}.joblib
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: sentiment-pipeline-artifacts-${{ steps.tag_version.outputs.new_tag }}
-        path: versioned_output/
-
+    
+    # Create a GitHub release with the versioned output files
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ steps.tag_version.outputs.new_tag }}
-        files: versioned_output/*
+        body: |
+          ## Installation
+                  
+          ### From Git Tag
+          ```bash
+          pip install git+https://github.com/${{ github.repository }}.git@${{ steps.tag_version.outputs.new_tag }}
+          ```
+          
+          ## Contents
+          - Source code (.tar.gz and .zip)
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Creates an empty commit to start the next development cycle
+    - name: Create next pre-release commit
+      run: |
+        git commit --allow-empty -m "New pre-release commit triggered by GitHub deployment action [skip ci]"
+        git push
     
+    # Bump the patch version and create a pre-release tag on the main branch
     - name: Bump patch and add pre tag
       id: bump_patch
       if: github.ref == 'refs/heads/main'
